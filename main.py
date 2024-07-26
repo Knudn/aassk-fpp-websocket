@@ -5,8 +5,10 @@ import requests
 from flask import Flask, request, jsonify
 from threading import Thread, Event
 import time
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # Global variables
 websocket_thread = None
@@ -101,7 +103,7 @@ def run_asyncio_coroutine(coroutine):
 def driver_start():
     global websocket_thread, stop_event, active_track
     track = request.args.get('track', default=1, type=int)
-    
+
     if websocket_thread and websocket_thread.is_alive():
         return "WebSocket is already running", 400
 
@@ -110,20 +112,20 @@ def driver_start():
 
     # Enable the model state
     enable_model_state()
-    
+
     # Set the active track
     active_track = track
-    
+
     # Start the WebSocket connection in a separate thread
     websocket_thread = Thread(target=run_asyncio_coroutine, args=(start_websocket(track),))
     websocket_thread.start()
-    
+
     return f"Driver started for track {track}"
 
 @app.route('/stop')
 def stop_websocket():
     global stop_event, websocket_thread, active_track
-    
+
     if not websocket_thread or not websocket_thread.is_alive():
         return "No WebSocket is currently running", 400
 
@@ -140,7 +142,7 @@ def stop_websocket():
 @app.route('/status')
 def get_status():
     global websocket_thread, last_received_data, last_received_time, active_track
-    
+
     status = {
         "websocket_running": bool(websocket_thread and websocket_thread.is_alive()),
         "active_track": active_track,  # Include the active track in the status
@@ -148,7 +150,7 @@ def get_status():
         "last_received_time": last_received_time,
         "time_since_last_received": time.time() - last_received_time if last_received_time else None
     }
-    
+
     return jsonify(status)
 
 if __name__ == '__main__':
